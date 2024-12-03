@@ -2,6 +2,7 @@
 
 namespace Vich\UploaderBundle\EventListener\Doctrine;
 
+use Doctrine\ORM\Event\OnFlushEventArgs;
 use Doctrine\Persistence\Event\LifecycleEventArgs;
 
 /**
@@ -49,5 +50,20 @@ class UploadListener extends BaseListener
         }
 
         $this->adapter->recomputeChangeSet($event);
+    }
+
+    /**
+     * @param OnFlushEventArgs $event The event
+     *
+     * @throws \Vich\UploaderBundle\Exception\MappingNotFoundException
+     */
+    public function onFlush(OnFlushEventArgs $args): void
+    {
+        $objectManager = $args->getObjectManager();
+        $uow = $objectManager->getUnitOfWork();
+
+        foreach ($uow->getScheduledEntityUpdates() as $entity) {
+            $this->preUpdate(new LifecycleEventArgs($entity, $objectManager));
+        }
     }
 }
